@@ -1,4 +1,4 @@
-# Chronos - Gamified To-Do List & Task Manager
+# Chronos - Gamified To-Do List
 
 ## 🚀 Introduction
 Chronos is a gamified task management and to-do list application designed to make productivity fun and engaging. With an interactive reward system, users earn points as they complete tasks, unlock achievements, and stay motivated on their journey to productivity.
