@@ -26,7 +26,4 @@ Chronos is a gamified task management and to-do list application designed to mak
     <img src="https://github.com/user-attachments/assets/bba6aaf4-f0e5-4146-bb15-74f7f85cec26" width="200">
 </p>
 
-## 📥 Installation
-1. Clone this repository:
-   ```sh
-   git clone https://github.com/yourusername/chronos.git
+
