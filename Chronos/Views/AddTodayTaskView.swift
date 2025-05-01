@@ -41,7 +41,15 @@ struct AddTodayTaskView: View {
                         .padding(.top)
                         
                         // Title Input
-                        aTaskInputCard(title: "Task Title", systemImage: "star.circle.fill") {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Image(systemName: "star.circle.fill")
+                                    .foregroundStyle(.orange)
+                                Text("Task Title")
+                                    .font(.headline)
+                            }
+                            .padding(.horizontal)
+                            
                             TextField("Enter your task", text: $title)
                                 .font(.title3)
                                 .padding()
@@ -52,10 +60,22 @@ struct AddTodayTaskView: View {
                                         .stroke(Color.orange.opacity(0.3), lineWidth: 1)
                                 )
                         }
+                        .padding()
+                        .background(Color.white.opacity(0.8))
+                        .cornerRadius(20)
+                        .shadow(color: .black.opacity(0.05), radius: 10)
                         .offset(x: isAnimating ? 0 : -300)
                         
                         // Description Input
-                        aTaskInputCard(title: "Description", systemImage: "text.quote") {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Image(systemName: "text.quote")
+                                    .foregroundStyle(.orange)
+                                Text("Description")
+                                    .font(.headline)
+                            }
+                            .padding(.horizontal)
+                            
                             TextEditor(text: $description)
                                 .frame(height: 100)
                                 .padding()
@@ -66,6 +86,10 @@ struct AddTodayTaskView: View {
                                         .stroke(Color.orange.opacity(0.3), lineWidth: 1)
                                 )
                         }
+                        .padding()
+                        .background(Color.white.opacity(0.8))
+                        .cornerRadius(20)
+                        .shadow(color: .black.opacity(0.05), radius: 10)
                         .offset(x: isAnimating ? 0 : 300)
                         
                         // Priority Selection
@@ -76,19 +100,38 @@ struct AddTodayTaskView: View {
                             
                             HStack(spacing: 12) {
                                 ForEach(TaskPriority.allCases) { priority in
-                                    PriorityCard(
-                                        priority: priority,
-                                        isSelected: selectedPriority == priority,
-                                        action: { 
-                                            withAnimation(.spring) {
-                                                selectedPriority = priority
-                                                showEmoji = true
-                                                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                                                    showEmoji = false
-                                                }
+                                    Button(action: {
+                                        withAnimation(.spring) {
+                                            selectedPriority = priority
+                                            showEmoji = true
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                                showEmoji = false
                                             }
                                         }
-                                    )
+                                    }) {
+                                        VStack(spacing: 12) {
+                                            Image(systemName: priority.icon)
+                                                .font(.title2)
+                                                .foregroundColor(selectedPriority == priority ? priority.color : .gray)
+                                            
+                                            Text(priority.rawValue)
+                                                .font(.caption)
+                                                .fontWeight(.medium)
+                                                .foregroundColor(selectedPriority == priority ? priority.color : .gray)
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 90)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 20)
+                                                .fill(selectedPriority == priority ? priority.color.opacity(0.1) : Color.white)
+                                        )
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 20)
+                                                .stroke(selectedPriority == priority ? priority.color : Color.gray.opacity(0.2), lineWidth: 2)
+                                        )
+                                    }
+                                    .scaleEffect(selectedPriority == priority ? 1.05 : 1.0)
+                                    .animation(.spring(response: 0.3), value: selectedPriority)
                                 }
                             }
                         }
@@ -178,68 +221,5 @@ struct AddTodayTaskView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             dismiss()
         }
-    }
-}
-
-struct PriorityCard: View {
-    let priority: TaskPriority
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 12) {
-                Image(systemName: priority.icon)
-                    .font(.title2)
-                    .foregroundColor(isSelected ? priority.color : .gray)
-                
-                Text(priority.rawValue)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(isSelected ? priority.color : .gray)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 90)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(isSelected ? priority.color.opacity(0.1) : Color.white)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(isSelected ? priority.color : Color.gray.opacity(0.2), lineWidth: 2)
-            )
-        }
-        .scaleEffect(isSelected ? 1.05 : 1.0)
-        .animation(.spring(response: 0.3), value: isSelected)
-    }
-}
-
-struct aTaskInputCard<Content: View>: View {
-    let title: String
-    let systemImage: String
-    let content: Content
-    
-    init(title: String, systemImage: String, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.systemImage = systemImage
-        self.content = content()
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: systemImage)
-                    .foregroundStyle(.orange)
-                Text(title)
-                    .font(.headline)
-            }
-            .padding(.horizontal)
-            
-            content
-        }
-        .padding()
-        .background(Color.white.opacity(0.8))
-        .cornerRadius(20)
-        .shadow(color: .black.opacity(0.05), radius: 10)
     }
 } 

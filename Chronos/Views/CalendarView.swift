@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct CalendarView: View {
-    @StateObject private var taskManager = TaskManager()
+    @ObservedObject var taskManager: TaskManager
     @State private var selectedDate = Date()
     @State private var showingAddTask = false
     
@@ -18,69 +18,72 @@ struct CalendarView: View {
     }
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Calendar
-                CustomDatePicker(
-                    selection: $selectedDate,
-                    datesWithTasks: datesWithTasks
-                )
-                .padding()
-                .background(Color.white)
-                .shadow(color: .black.opacity(0.05), radius: 10, y: 5)
-                
-                // Tasks for selected date
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack {
-                        Text(selectedDate.formatted(date: .complete, time: .omitted))
-                            .font(.headline)
-                        Spacer()
-                        
-                        // Enhanced Add Task Button
-                        Button(action: { showingAddTask = true }) {
-                            HStack {
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.title2)
-                                Text("Add Task")
-                                    .fontWeight(.semibold)
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(
-                                Capsule()
-                                    .fill(Color.orange)
-                            )
-                            .foregroundColor(.white)
-                        }
-                    }
-                    .padding(.horizontal)
+        VStack(spacing: 0) {
+            Text("Calender")
+                .font(.system(size: 30, weight: .bold))
+                .foregroundColor(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading,10)
+            // Calendar
+            CustomDatePicker(
+                selection: $selectedDate,
+                datesWithTasks: datesWithTasks
+            )
+            .padding()
+            .background(Color.white)
+            .shadow(color: .black.opacity(0.05), radius: 10, y: 5)
+            
+            // Tasks for selected date
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Text(selectedDate.formatted(date: .complete, time: .omitted))
+                        .font(.headline)
+                    Spacer()
                     
-                    if tasksForSelectedDate.isEmpty {
-                        VStack(spacing: 12) {
-                            Image(systemName: "calendar.badge.clock")
-                                .font(.largeTitle)
-                                .foregroundColor(.gray)
-                            Text("No tasks scheduled")
-                                .foregroundColor(.gray)
+                    // Enhanced Add Task Button
+                    Button(action: { showingAddTask = true }) {
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title2)
+                            Text("Add Task")
+                                .fontWeight(.semibold)
                         }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else {
-                        ScrollView {
-                            LazyVStack(spacing: 12) {
-                                ForEach(tasksForSelectedDate) { task in
-                                    CalendarTaskRow(task: task, taskManager: taskManager)
-                                }
-                            }
-                            .padding(.horizontal)
-                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            Capsule()
+                                .fill(Color.orange)
+                        )
+                        .foregroundColor(.white)
                     }
                 }
-                .padding(.top)
+                .padding(.horizontal)
+                
+                if tasksForSelectedDate.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "calendar.badge.clock")
+                            .font(.largeTitle)
+                            .foregroundColor(.gray)
+                        Text("No tasks scheduled")
+                            .foregroundColor(.gray)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(tasksForSelectedDate) { task in
+                                CalendarTaskRow(task: task, taskManager: taskManager)
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                }
             }
-            .navigationTitle("Calendar")
-            .sheet(isPresented: $showingAddTask) {
-                AddTaskView(taskManager: taskManager)
-            }
+            .padding(.top)
+        }
+        .navigationTitle("Calendar")
+        .sheet(isPresented: $showingAddTask) {
+            AddTaskView(taskManager: taskManager)
         }
     }
 }
