@@ -83,27 +83,32 @@ struct AddTaskView: View {
                         
                         // Voice Add Task
                         Button(action: {
-                            voiceInputManager.transcribeSpeechToText { transcribedText in
-                                let trimmed = transcribedText.trimmingCharacters(in: .whitespacesAndNewlines)
-                                guard !trimmed.isEmpty else { return }
-                                DispatchQueue.main.async {
-                                    if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                        // Use first line as title; rest as description
-                                        let parts = trimmed.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: true)
-                                        title = String(parts.first ?? "")
-                                        if parts.count > 1 {
-                                            let rest = String(parts[1])
-                                            description = description.isEmpty ? rest : description + "\n" + rest
+                            voiceInputManager.startVoiceInput { result in
+                                switch result {
+                                case .success(let processedTask):
+                                    let trimmed = processedTask.title.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+                                    guard !trimmed.isEmpty else { return }
+                                    DispatchQueue.main.async {
+                                        if title.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).isEmpty {
+                                            // Use first line as title; rest as description
+                                            let parts = trimmed.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: true)
+                                            title = String(parts.first ?? "")
+                                            if parts.count > 1 {
+                                                let rest = String(parts[1])
+                                                description = description.isEmpty ? rest : description + "\n" + rest
+                                            }
+                                        } else {
+                                            // Append to description if title already set
+                                            description = description.isEmpty ? trimmed : description + "\n" + trimmed
                                         }
-                                    } else {
-                                        // Append to description if title already set
-                                        description = description.isEmpty ? trimmed : description + "\n" + trimmed
+                                        // If we have a title now, create the task immediately
+                                        if !title.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).isEmpty {
+                                            addTask()
+                                            showVoiceAddConfirmation = true
+                                        }
                                     }
-                                    // If we have a title now, create the task immediately
-                                    if !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                        addTask()
-                                        showVoiceAddConfirmation = true
-                                    }
+                                case .failure(let error):
+                                    print("Voice input failed: \(error)")
                                 }
                             }
                         }) {
@@ -259,9 +264,14 @@ private struct TitleInputSection: View {
                     .cornerRadius(12)
                     .foregroundStyle(.primary)
                 Button(action: {
-                    voiceInputManager.transcribeSpeechToText { transcribedText in
-                        if !transcribedText.isEmpty {
-                            DispatchQueue.main.async { title = transcribedText }
+                    voiceInputManager.startVoiceInput { result in
+                        switch result {
+                        case .success(let processedTask):
+                            if !processedTask.title.isEmpty {
+                                DispatchQueue.main.async { title = processedTask.title }
+                            }
+                        case .failure(let error):
+                            print("Voice input failed: \(error)")
                         }
                     }
                 }) {
@@ -298,9 +308,14 @@ private struct DescriptionInputSection: View {
                 HStack {
                     Spacer()
                     Button(action: {
-                        voiceInputManager.transcribeSpeechToText { transcribedText in
-                            if !transcribedText.isEmpty {
-                                DispatchQueue.main.async { description = transcribedText }
+                        voiceInputManager.startVoiceInput { result in
+                            switch result {
+                            case .success(let processedTask):
+                                if !processedTask.title.isEmpty {
+                                    DispatchQueue.main.async { description = processedTask.title }
+                                }
+                            case .failure(let error):
+                                print("Voice input failed: \(error)")
                             }
                         }
                     }) {

@@ -11,7 +11,6 @@
 		BDC689612E9E8CCA00B4C887 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDC689602E9E8CCA00B4C887 /* OnboardingView.swift */; };
 		BDC689632E9E8CCC00B4C887 /* AppReadinessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDC689622E9E8CCC00B4C887 /* AppReadinessTests.swift */; };
 		BDC689652E9E8CCF00B4C887 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = BDC689642E9E8CCF00B4C887 /* Localizable.strings */; };
-		BDC689672E9E8D1B00B4C887 /* OnboardingView 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDC689662E9E8D1B00B4C887 /* OnboardingView 2.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,12 +19,24 @@
 		BDC689602E9E8CCA00B4C887 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		BDC689622E9E8CCC00B4C887 /* AppReadinessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppReadinessTests.swift; sourceTree = "<group>"; };
 		BDC689642E9E8CCF00B4C887 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
-		BDC689662E9E8D1B00B4C887 /* OnboardingView 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OnboardingView 2.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		BD94BD452EADD7D900F1B787 /* Exceptions for "Chronos" folder in "Chronos" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 454149E82D58A6A90029558D /* Chronos */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		454149EB2D58A6A90029558D /* Chronos */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				BD94BD452EADD7D900F1B787 /* Exceptions for "Chronos" folder in "Chronos" target */,
+			);
 			path = Chronos;
 			sourceTree = "<group>";
 		};
@@ -51,7 +62,6 @@
 				BDC689602E9E8CCA00B4C887 /* OnboardingView.swift */,
 				BDC689622E9E8CCC00B4C887 /* AppReadinessTests.swift */,
 				BDC689642E9E8CCF00B4C887 /* Localizable.strings */,
-				BDC689662E9E8D1B00B4C887 /* OnboardingView 2.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -140,7 +150,6 @@
 			files = (
 				BDC689632E9E8CCC00B4C887 /* AppReadinessTests.swift in Sources */,
 				BDC6895F2E9E8C0800B4C887 /* CalendarSyncManager.swift in Sources */,
-				BDC689672E9E8D1B00B4C887 /* OnboardingView 2.swift in Sources */,
 				BDC689612E9E8CCA00B4C887 /* OnboardingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -19,12 +19,16 @@ public struct VoiceAddTaskButton: View {
     public var body: some View {
         Button {
             if voiceInputManager.isRecording {
-                voiceInputManager.stopRecording { transcription in
-                    onTranscription(transcription)
-                }
+                voiceInputManager.stopRecording()
+                onTranscription(voiceInputManager.lastTranscription)
             } else {
-                voiceInputManager.transcribeSpeechToText { transcription in
-                    onTranscription(transcription)
+                voiceInputManager.startVoiceInput { result in
+                    switch result {
+                    case .success(let processedTask):
+                        onTranscription(processedTask.originalText)
+                    case .failure:
+                        onTranscription("Voice input failed")
+                    }
                 }
             }
         } label: {
