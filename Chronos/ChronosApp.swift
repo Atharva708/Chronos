@@ -9,9 +9,14 @@ import SwiftUI
 
 @main
 struct ChronosApp: App {
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .sheet(isPresented: .constant(!hasSeenOnboarding)) {
+                    OnboardingView()
+                }
         }
     }
 }

@@ -1,0 +1,13 @@
+/* English Localizations */
+"Tasks" = "Tasks";
+"Add Task" = "Add Task";
+"Theme Store" = "Theme Store";
+"Welcome to TaskPro!" = "Welcome to TaskPro!";
+"Let's Get Started" = "Let's Get Started";
+"Success" = "Success";
+"Error" = "Error";
+"The task was successfully synced to your calendar." = "The task was successfully synced to your calendar.";
+"Failed to sync the task to your calendar. Please try again." = "Failed to sync the task to your calendar. Please try again.";
+"Record task title" = "Record task title";
+"Record description" = "Record description";
+"Sync this task to Calendar" = "Sync this task to Calendar";
