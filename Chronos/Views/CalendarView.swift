@@ -19,9 +19,9 @@ struct CalendarView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            Text("Calender")
+            Text("Calendar")
                 .font(.system(size: 30, weight: .bold))
-                .foregroundColor(.primary)
+                .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.leading,10)
             // Calendar
@@ -30,7 +30,7 @@ struct CalendarView: View {
                 datesWithTasks: datesWithTasks
             )
             .padding()
-            .background(Color.white)
+            .background(Color(.secondarySystemBackground))
             .shadow(color: .black.opacity(0.05), radius: 10, y: 5)
             
             // Tasks for selected date
@@ -38,6 +38,7 @@ struct CalendarView: View {
                 HStack {
                     Text(selectedDate.formatted(date: .complete, time: .omitted))
                         .font(.headline)
+                        .foregroundStyle(.primary)
                     Spacer()
                     
                     // Enhanced Add Task Button
@@ -63,9 +64,9 @@ struct CalendarView: View {
                     VStack(spacing: 12) {
                         Image(systemName: "calendar.badge.clock")
                             .font(.largeTitle)
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.secondary)
                         Text("No tasks scheduled")
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
@@ -99,23 +100,18 @@ struct CustomDatePicker: View {
             selection: $selection,
             displayedComponents: [.date]
         )
+        .labelsHidden()
         .datePickerStyle(.graphical)
         .tint(.orange)
-        .overlay(
-            GeometryReader { geometry in
-                ForEach(Array(datesWithTasks), id: \.self) { date in
-                    Circle()
-                        .fill(Color.orange)
-                        .frame(width: 6, height: 6)
-                        .position(positionForDate(date, in: geometry))
-                }
-            }
-        )
+        .padding()
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
+        .foregroundStyle(.primary)
+        // TODO: Add task markers with precise positioning if needed
     }
     
-    private func positionForDate(_ date: Date, in geometry: GeometryProxy) -> CGPoint {
-        // This is a placeholder implementation
-        // You'll need to calculate the actual position based on the date
-        CGPoint(x: 0, y: 0)
-    }
+//    private func positionForDate(_ date: Date, in geometry: GeometryProxy) -> CGPoint {
+//        // This is a placeholder implementation
+//        // You'll need to calculate the actual position based on the date
+//        CGPoint(x: 0, y: 0)
+//    }
 } 

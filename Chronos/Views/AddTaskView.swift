@@ -4,130 +4,6 @@ import Speech
 import AVFoundation
 import FoundationModels // Added for Foundation Model integration
 
-// MARK: - VoiceInputManager: Real speech-to-text manager using SFSpeechRecognizer and AVAudioEngine
-class VoiceInputManager: NSObject, ObservableObject {
-    private let speechRecognizer = SFSpeechRecognizer()
-    private let audioEngine = AVAudioEngine()
-    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
-    private var recognitionTask: SFSpeechRecognitionTask?
-    
-    @Published var isRecording = false
-    
-    override init() {
-        super.init()
-        requestAuthorization()
-    }
-    
-    private func requestAuthorization() {
-        SFSpeechRecognizer.requestAuthorization { authStatus in
-            switch authStatus {
-            case .authorized:
-                break // authorized
-            case .denied, .restricted, .notDetermined:
-                break // handle accordingly if needed
-            @unknown default:
-                break
-            }
-        }
-        AVAudioSession.sharedInstance().requestRecordPermission { granted in
-            // handle permission if needed
-        }
-    }
-    
-    /// Starts recording and transcribing speech to text asynchronously.
-    /// The completion handler is called when the user stops recording or an error occurs.
-    func transcribeSpeechToText(completion: @escaping (String) -> Void) {
-        if isRecording {
-            stopRecording { resultText in
-                completion(resultText)
-            }
-        } else {
-            startRecording { resultText in
-                completion(resultText)
-            }
-        }
-    }
-    
-    private func startRecording(completion: @escaping (String) -> Void) {
-        if recognitionTask != nil {
-            recognitionTask?.cancel()
-            recognitionTask = nil
-        }
-        
-        let audioSession = AVAudioSession.sharedInstance()
-        do {
-            try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-        } catch {
-            completion("")
-            return
-        }
-        
-        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-        guard let recognitionRequest = recognitionRequest else {
-            completion("")
-            return
-        }
-        recognitionRequest.shouldReportPartialResults = true
-        
-        let inputNode = audioEngine.inputNode
-        
-        recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { [weak self] result, error in
-            guard let self = self else { return }
-            
-            if let result = result {
-                // Partial or final transcription
-                if result.isFinal {
-                    self.stopRecording { _ in
-                        completion(result.bestTranscription.formattedString)
-                    }
-                }
-            }
-            
-            if error != nil {
-                self.stopRecording { _ in
-                    completion("")
-                }
-            }
-        }
-        
-        let recordingFormat = inputNode.outputFormat(forBus: 0)
-        inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer: AVAudioPCMBuffer, when: AVAudioTime) in
-            self.recognitionRequest?.append(buffer)
-        }
-        
-        audioEngine.prepare()
-        do {
-            try audioEngine.start()
-            DispatchQueue.main.async {
-                self.isRecording = true
-            }
-        } catch {
-            completion("")
-            return
-        }
-    }
-    
-    private func stopRecording(completion: @escaping (String) -> Void) {
-        audioEngine.stop()
-        recognitionRequest?.endAudio()
-        audioEngine.inputNode.removeTap(onBus: 0)
-        
-        recognitionTask?.cancel()
-        recognitionTask = nil
-        recognitionRequest = nil
-        
-        DispatchQueue.main.async {
-            self.isRecording = false
-        }
-        // Small delay to ensure recognitionTask finishes properly before callback
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            completion("") // When stopped manually, no new result is sent here
-        }
-    }
-}
-
 /// Privacy Usage Description comments for Info.plist:
 /// NSMicrophoneUsageDescription = "This app requires access to the microphone to enable speech-to-text input."
 /// NSSpeechRecognitionUsageDescription = "This app uses speech recognition to convert your voice into text."
@@ -135,6 +11,9 @@ class VoiceInputManager: NSObject, ObservableObject {
 struct AddTaskView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var taskManager: TaskManager
+    private let initialTitle: String?
+    private let initialDescription: String?
+    @Environment(\.colorScheme) private var colorScheme
     
     @State private var title = ""
     @State private var description = ""
@@ -156,13 +35,26 @@ struct AddTaskView: View {
     // States for calendar sync success/error alerts
     @State private var showCalendarSyncSuccess = false
     @State private var showCalendarSyncError = false
+    @State private var isSyncingToCalendar = false
+    @State private var calendarSyncErrorMessage: String? = nil
     
-    let gradientColors = [Color.orange, Color.pink]
-    private var backgroundGradientColors: [Color] { [Color.orange.opacity(0.1), Color.pink.opacity(0.1)] }
-    private let inputBackground = Color.white.opacity(0.8)
+    // State to show brief toast/notification for voice-added tasks
+    @State private var showVoiceAddConfirmation = false
+    
+    let gradientColors: [Color] = [Color.accentColor, Color.orange]
+    private var backgroundGradientColors: [Color] { [Color(.systemBackground), Color(.secondarySystemBackground)] }
+    private var inputBackground: Color { Color(.secondarySystemBackground) }
     
     private var isTitleEmpty: Bool { title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     private var isDescriptionEmpty: Bool { description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    
+    init(taskManager: TaskManager, initialTitle: String? = nil, initialDescription: String? = nil) {
+        self.taskManager = taskManager
+        self._title = State(initialValue: initialTitle ?? "")
+        self._description = State(initialValue: initialDescription ?? "")
+        self.initialTitle = initialTitle
+        self.initialDescription = initialDescription
+    }
     
     var body: some View {
         NavigationView {
@@ -189,14 +81,62 @@ struct AddTaskView: View {
                         // Due date
                         DueDateSection(dueDate: $dueDate, isAnimating: isAnimating, inputBackground: inputBackground)
                         
+                        // Voice Add Task
+                        Button(action: {
+                            voiceInputManager.transcribeSpeechToText { transcribedText in
+                                let trimmed = transcribedText.trimmingCharacters(in: .whitespacesAndNewlines)
+                                guard !trimmed.isEmpty else { return }
+                                DispatchQueue.main.async {
+                                    if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                        // Use first line as title; rest as description
+                                        let parts = trimmed.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: true)
+                                        title = String(parts.first ?? "")
+                                        if parts.count > 1 {
+                                            let rest = String(parts[1])
+                                            description = description.isEmpty ? rest : description + "\n" + rest
+                                        }
+                                    } else {
+                                        // Append to description if title already set
+                                        description = description.isEmpty ? trimmed : description + "\n" + trimmed
+                                    }
+                                    // If we have a title now, create the task immediately
+                                    if !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                        addTask()
+                                        showVoiceAddConfirmation = true
+                                    }
+                                }
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: voiceInputManager.isRecording ? "stop.circle.fill" : "mic.circle.fill")
+                                Text(voiceInputManager.isRecording ? "Stop & Create" : "Add Task by Voice")
+                                    .fontWeight(.semibold)
+                            }
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(
+                                LinearGradient(colors: gradientColors, startPoint: .leading, endPoint: .trailing)
+                            )
+                            .cornerRadius(12)
+                            .shadow(radius: 6)
+                        }
+                        .accessibilityLabel("Add task by voice")
+                        .padding(.horizontal)
+                        .opacity(1.0)
+                        
                         // Add + Sync buttons
-                        AddAndSyncButtonsSection(title: title, gradientColors: gradientColors, isAnimating: isAnimating, addTask: addTask, canSync: !taskManager.tasks.isEmpty, syncAction: {
+                        AddAndSyncButtonsSection(title: title, gradientColors: gradientColors, isAnimating: isAnimating, isSyncing: isSyncingToCalendar, addTask: addTask, canSync: !taskManager.tasks.isEmpty, syncAction: {
+                            guard !isSyncingToCalendar else { return }
                             guard let lastTask = taskManager.tasks.last else { return }
+                            isSyncingToCalendar = true
                             CalendarSyncManager.shared.addTaskToCalendar(task: lastTask) { success, error in
                                 DispatchQueue.main.async {
+                                    isSyncingToCalendar = false
                                     if success {
                                         showCalendarSyncSuccess = true
                                     } else {
+                                        calendarSyncErrorMessage = error?.localizedDescription ?? "Failed to sync the task to your calendar. Please try again."
                                         showCalendarSyncError = true
                                     }
                                 }
@@ -230,7 +170,12 @@ struct AddTaskView: View {
             .alert("Error", isPresented: $showCalendarSyncError) {
                 Button("OK", role: .cancel) { }
             } message: {
-                Text("Failed to sync the task to your calendar. Please try again.")
+                Text(calendarSyncErrorMessage ?? "Failed to sync the task to your calendar. Please try again.")
+            }
+            .alert("Task Created", isPresented: $showVoiceAddConfirmation) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Your task was created from voice input.")
             }
         }
     }
@@ -312,7 +257,7 @@ private struct TitleInputSection: View {
                     .frame(height: 50)
                     .background(inputBackground)
                     .cornerRadius(12)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                 Button(action: {
                     voiceInputManager.transcribeSpeechToText { transcribedText in
                         if !transcribedText.isEmpty {
@@ -349,7 +294,7 @@ private struct DescriptionInputSection: View {
                     .padding(.horizontal)
                     .background(inputBackground)
                     .cornerRadius(12)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                 HStack {
                     Spacer()
                     Button(action: {
@@ -393,7 +338,7 @@ private struct BreakDownButtonSection: View {
                 Text("Break down with AI")
                     .fontWeight(.semibold)
             }
-            .foregroundColor(.white)
+            .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .frame(height: 44)
             .background(
@@ -437,14 +382,14 @@ private struct SubtasksSection: View {
                                     }
                                 }) {
                                     Image(systemName: checkedSubtasks.contains(index) ? "checkmark.square.fill" : "square")
-                                        .foregroundColor(checkedSubtasks.contains(index) ? .orange : .gray)
+                                        .foregroundStyle(checkedSubtasks.contains(index) ? .orange : Color.secondary)
                                         .imageScale(.large)
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 Text(suggestedSubtasks[index])
                                     .lineLimit(nil)
                                     .multilineTextAlignment(.leading)
-                                    .foregroundColor(.primary)
+                                    .foregroundStyle(.primary)
                             }
                             .padding(.vertical, 4)
                         }
@@ -454,7 +399,7 @@ private struct SubtasksSection: View {
                                 Text("Add Subtasks as Tasks")
                                     .fontWeight(.semibold)
                             }
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
                             .background(
@@ -503,7 +448,7 @@ private struct DueDateSection: View {
                 .padding()
                 .background(inputBackground)
                 .cornerRadius(12)
-                .foregroundColor(.primary)
+                .foregroundStyle(.primary)
         }
         .offset(y: isAnimating ? 0 : 300)
     }
@@ -513,6 +458,7 @@ private struct AddAndSyncButtonsSection: View {
     let title: String
     let gradientColors: [Color]
     let isAnimating: Bool
+    let isSyncing: Bool
     let addTask: () -> Void
     let canSync: Bool
     let syncAction: () -> Void
@@ -524,7 +470,7 @@ private struct AddAndSyncButtonsSection: View {
                     Text("Create Task")
                         .fontWeight(.semibold)
                 }
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
                 .background(
@@ -538,11 +484,12 @@ private struct AddAndSyncButtonsSection: View {
             .padding(.top)
             Button(action: syncAction) {
                 HStack {
+                    if isSyncing { ProgressView().tint(.white) }
                     Image(systemName: "calendar.badge.plus")
-                    Text("Sync this task to Calendar")
+                    Text(isSyncing ? "Syncing…" : "Sync this task to Calendar")
                         .fontWeight(.semibold)
                 }
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 44)
                 .background(
@@ -551,7 +498,7 @@ private struct AddAndSyncButtonsSection: View {
                 .cornerRadius(16)
                 .shadow(radius: 8)
             }
-            .disabled(!canSync)
+            .disabled(!canSync || isSyncing)
         }
     }
 }
@@ -580,6 +527,7 @@ struct TaskInputCard<Content: View>: View {
     let title: String
     let systemImage: String
     let content: Content
+    @Environment(\.colorScheme) private var colorScheme
     
     init(title: String, systemImage: String, @ViewBuilder content: () -> Content) {
         self.title = title
@@ -601,9 +549,9 @@ struct TaskInputCard<Content: View>: View {
             content
         }
         .padding(.vertical)
-        .background(.ultraThinMaterial)
+        .background(.thinMaterial)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1), radius: 8, x: 0, y: 4)
     }
 }
 
@@ -622,12 +570,12 @@ struct PriorityButton: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: 70)
-            .background(isSelected ? priority.color.opacity(0.2) : Color.gray.opacity(0.1))
-            .foregroundColor(isSelected ? priority.color : .gray)
+            .background(isSelected ? priority.color.opacity(0.25) : Color(.tertiarySystemFill))
+            .foregroundStyle(isSelected ? priority.color : Color.secondary)
             .cornerRadius(12)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? priority.color : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? priority.color : Color(.separator), lineWidth: 1)
             )
         }
     }
@@ -657,3 +605,4 @@ enum TaskPriority: String, CaseIterable, Codable, Identifiable {
         }
     }
 }
+

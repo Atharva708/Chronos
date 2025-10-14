@@ -16,7 +16,7 @@ struct ProfileView: View {
             VStack(spacing: 24) {
                 Text("Profile")
                     .font(.system(size: 30, weight: .bold))
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.leading,10)
 
@@ -28,7 +28,7 @@ struct ProfileView: View {
 
                     Text("Total Points")
                         .font(.headline)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.secondary)
 
                     // Level display below points
                     Text("Level \(taskManager.level)")
@@ -40,7 +40,7 @@ struct ProfileView: View {
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(Color.white)
+                        .fill(Color(.secondarySystemBackground))
                         .shadow(color: .black.opacity(0.1), radius: 8)
                 )
                 .padding(.horizontal)
@@ -74,7 +74,7 @@ struct ProfileView: View {
                         .padding(.horizontal)
                     }
                     .padding()
-                    .background(Color.white)
+                    .background(Color(.secondarySystemBackground))
                     .cornerRadius(12)
                     .shadow(color: .black.opacity(0.05), radius: 5)
                 }
@@ -97,7 +97,7 @@ struct ProfileView: View {
                                 .foregroundColor(.gray)
                         }
                         .padding()
-                        .background(Color.white)
+                        .background(Color(.secondarySystemBackground))
                         .cornerRadius(12)
                         .shadow(color: .black.opacity(0.05), radius: 5)
                     }
@@ -124,7 +124,7 @@ struct ProfileView: View {
             .padding(.vertical)
         }
         .navigationTitle("Profile")
-        .background(Color.gray.opacity(0.1))
+        .background(Color(.systemBackground))
         .sheet(isPresented: $showingThemeStore) {
             ThemeStoreView()
         }
@@ -185,6 +185,7 @@ struct StatRow: View {
     var body: some View {
         HStack {
             Text(title)
+                .foregroundStyle(.primary)
             Spacer()
             Text(value)
                 .bold()
@@ -225,14 +226,14 @@ struct AchievementRow: View {
                 if !achievement.isUnlocked {
                     Text("Locked")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.secondary)
                 }
             }
             Spacer()
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
-        .background(Color.white)
+        .background(Color(.secondarySystemBackground))
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.03), radius: 3)
     }
